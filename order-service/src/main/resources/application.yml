@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: order-service
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:orderdb}?currentSchema=orders
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:admin}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Flyway gestiona el esquema; Hibernate solo valida
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: orders
+
+  flyway:
+    enabled: true
+    schemas: orders
+    default-schema: orders
+    locations: classpath:db/migration
+
+  kafka:
+    # localhost:9093 → para ejecutar la app desde el host Windows (Docker expone este puerto)
+    # kafka:9092     → para ejecutar la app dentro de Docker (sobrescribir con KAFKA_BOOTSTRAP_SERVERS)
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9093}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false  # Evita enviar type headers, usamos clases de eventos propias
+    consumer:
+      group-id: order-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.order.event"
+
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+topics:
+  orders: orders
+  payments: payments
+  inventory: inventory
