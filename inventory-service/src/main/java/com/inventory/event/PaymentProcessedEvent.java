@@ -1,4 +1,4 @@
-package com.payment.event;
+package com.inventory.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

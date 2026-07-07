@@ -1,5 +1,6 @@
 package com.payment.event;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.payment.service.PaymentService;
 import org.junit.jupiter.api.Test;
@@ -49,9 +50,9 @@ class PaymentEventConsumerTest {
     }
 
     @Test
-    void handleInventoryShortage_deserializesAndProcesses() throws Exception {
+    void handleInventoryEvent_withReason_deserializesAndProcesses() throws Exception {
         // Given
-        String payload = "{\"orderId\":\"123e4567-e89b-12d3-a456-426614174000\"}";
+        String payload = "{\"orderId\":\"123e4567-e89b-12d3-a456-426614174000\",\"reason\":\"Stock insuficiente\"}";
         InventoryShortageEvent event = InventoryShortageEvent.builder()
                 .eventId(UUID.randomUUID())
                 .orderId(UUID.randomUUID())
@@ -59,12 +60,36 @@ class PaymentEventConsumerTest {
                 .timestamp(System.currentTimeMillis())
                 .build();
 
+        JsonNode jsonNode = mock(JsonNode.class);
+        JsonNode reasonNode = mock(JsonNode.class);
+        
+        when(objectMapper.readTree(payload)).thenReturn(jsonNode);
+        when(jsonNode.has("reason")).thenReturn(true);
+        when(jsonNode.get("reason")).thenReturn(reasonNode);
+        when(reasonNode.isNull()).thenReturn(false);
         when(objectMapper.readValue(payload, InventoryShortageEvent.class)).thenReturn(event);
 
         // When
-        consumer.handleInventoryShortage(payload);
+        consumer.handleInventoryEvent(payload);
 
         // Then
         verify(paymentService).processRefund(event);
+    }
+
+    @Test
+    void handleInventoryEvent_withoutReason_ignoresEvent() throws Exception {
+        // Given
+        String payload = "{\"orderId\":\"123e4567-e89b-12d3-a456-426614174000\",\"status\":\"RESERVED\"}";
+
+        JsonNode jsonNode = mock(JsonNode.class);
+        
+        when(objectMapper.readTree(payload)).thenReturn(jsonNode);
+        when(jsonNode.has("reason")).thenReturn(false);
+
+        // When
+        consumer.handleInventoryEvent(payload);
+
+        // Then
+        verifyNoInteractions(paymentService);
     }
 }

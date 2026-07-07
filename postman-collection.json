@@ -1,0 +1,238 @@
+{
+  "info": {
+    "name": "Order Processing System",
+    "description": "Collection para probar el sistema de procesamiento de pedidos con microservicios",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Order Service",
+      "item": [
+        {
+          "name": "Crear Pedido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"user1\",\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 2,\n      \"unitPrice\": 25.50\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8081/api/orders",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "orders"]
+            },
+            "description": "Crea un nuevo pedido y publica evento OrderCreated en Kafka. IMPORTANTE: Configura la variable 'productId' con el UUID de un producto existente en el inventario"
+          }
+        },
+        {
+          "name": "Listar Pedidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/orders",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "orders"]
+            },
+            "description": "Lista todos los pedidos"
+          }
+        },
+        {
+          "name": "Obtener Pedido por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/orders/{{orderId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "orders", "{{orderId}}"]
+            },
+            "description": "Obtiene un pedido específico por su ID"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment Service",
+      "item": [
+        {
+          "name": "Obtener Pago por Order ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8082/api/payments/order/{{orderId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8082",
+              "path": ["api", "payments", "order", "{{orderId}}"]
+            },
+            "description": "Obtiene el pago asociado a un pedido"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory Service",
+      "item": [
+        {
+          "name": "Crear Producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Producto de Prueba\",\n  \"sku\": \"SKU-001\",\n  \"stock\": 100,\n  \"price\": 25.50\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8083/api/products",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8083",
+              "path": ["api", "products"]
+            },
+            "description": "Crea un nuevo producto en el inventario"
+          }
+        },
+        {
+          "name": "Listar Productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8083/api/products",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8083",
+              "path": ["api", "products"]
+            },
+            "description": "Lista todos los productos del inventario"
+          }
+        },
+        {
+          "name": "Actualizar Stock",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stock\": 50\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8083/api/products/{{productId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8083",
+              "path": ["api", "products", "{{productId}}"]
+            },
+            "description": "Actualiza el stock de un producto existente"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Swagger UI",
+      "item": [
+        {
+          "name": "Order Service Swagger",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/swagger-ui.html",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["swagger-ui.html"]
+            },
+            "description": "Documentación Swagger del Order Service"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Actuator",
+      "item": [
+        {
+          "name": "Order Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/actuator/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["actuator", "health"]
+            },
+            "description": "Health check del Order Service"
+          }
+        },
+        {
+          "name": "Payment Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8082/actuator/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8082",
+              "path": ["actuator", "health"]
+            },
+            "description": "Health check del Payment Service"
+          }
+        },
+        {
+          "name": "Inventory Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8083/actuator/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8083",
+              "path": ["actuator", "health"]
+            },
+            "description": "Health check del Inventory Service"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

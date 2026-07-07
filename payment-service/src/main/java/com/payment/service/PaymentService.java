@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -53,7 +54,7 @@ public class PaymentService {
             Payment approvedPayment = paymentRepository.saveAndFlush(savedPayment);
             log.info("Pago aprobado para pedido {}. TransactionId: {}", event.getOrderId(), approvedPayment.getTransactionId());
 
-            PaymentProcessedEvent processedEvent = mapToProcessedEvent(approvedPayment);
+            PaymentProcessedEvent processedEvent = mapToProcessedEvent(approvedPayment, event.getItems());
             saveOutboxEvent(event.getOrderId(), processedEvent);
         } else {
             savedPayment.setStatus(PaymentStatus.DECLINED);
@@ -103,7 +104,7 @@ public class PaymentService {
         }
     }
 
-    private PaymentProcessedEvent mapToProcessedEvent(Payment payment) {
+    private PaymentProcessedEvent mapToProcessedEvent(Payment payment, List<OrderItemEvent> items) {
         return PaymentProcessedEvent.builder()
                 .eventId(UUID.randomUUID())
                 .orderId(payment.getOrderId())
@@ -111,6 +112,7 @@ public class PaymentService {
                 .amount(payment.getAmount())
                 .transactionId(payment.getTransactionId())
                 .status(payment.getStatus().name())
+                .items(items)
                 .timestamp(Instant.now().toEpochMilli())
                 .build();
     }
