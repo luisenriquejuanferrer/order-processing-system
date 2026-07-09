@@ -84,6 +84,48 @@ class OutboxPublisherTest {
     }
 
     @Test
+    void publishPendingEvents_withOrderConfirmedEvent_publishesAndMarksPublished() throws Exception {
+        // Given
+        UUID eventId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+        String payload = "{\"eventId\":\"" + eventId + "\"}";
+
+        OutboxEvent pendingEvent = OutboxEvent.builder()
+                .id(UUID.randomUUID())
+                .aggregateId(orderId)
+                .eventType("OrderConfirmedEvent")
+                .payload(payload)
+                .status(OutboxStatus.PENDING)
+                .createdAt(OffsetDateTime.now())
+                .build();
+
+        OrderConfirmedEvent event = OrderConfirmedEvent.builder()
+                .eventId(eventId)
+                .orderId(orderId)
+                .userId("user1")
+                .timestamp(System.currentTimeMillis())
+                .build();
+
+        when(outboxEventRepository.findTop50ByStatusOrderByCreatedAtAsc(OutboxStatus.PENDING))
+                .thenReturn(List.of(pendingEvent));
+        when(objectMapper.readValue(payload, OrderConfirmedEvent.class)).thenReturn(event);
+        when(outboxEventRepository.save(any(OutboxEvent.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // When
+        publisher.publishPendingEvents();
+
+        // Then
+        verify(eventProducer).publishOrderConfirmed(event);
+
+        ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(outboxEventRepository).save(captor.capture());
+
+        OutboxEvent updatedEvent = captor.getValue();
+        assertThat(updatedEvent.getStatus()).isEqualTo(OutboxStatus.PUBLISHED);
+        assertThat(updatedEvent.getPublishedAt()).isNotNull();
+    }
+
+    @Test
     void publishPendingEvents_noPendingEvents_doesNothing() {
         // Given
         when(outboxEventRepository.findTop50ByStatusOrderByCreatedAtAsc(OutboxStatus.PENDING))

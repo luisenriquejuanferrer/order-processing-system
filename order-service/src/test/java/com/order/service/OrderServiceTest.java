@@ -11,6 +11,7 @@ import com.order.model.OutboxEvent;
 import com.order.model.OutboxStatus;
 import com.order.repository.OrderRepository;
 import com.order.repository.OutboxEventRepository;
+import com.order.repository.ProcessedEventRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,9 @@ class OrderServiceTest {
 
     @Mock
     private OutboxEventRepository outboxEventRepository;
+
+    @Mock
+    private ProcessedEventRepository processedEventRepository;
 
     @Mock
     private ObjectMapper objectMapper;
@@ -171,5 +175,92 @@ class OrderServiceTest {
 
         // Then
         verify(orderRepository).saveAndFlush(any(Order.class));
+    }
+
+    @Test
+    void markAsConfirmed_success_updatesStatusAndSavesOutboxEvent() throws Exception {
+        // Given
+        UUID orderId = UUID.randomUUID();
+        Order order = Order.builder()
+                .id(orderId)
+                .userId("user1")
+                .status(OrderStatus.PENDING)
+                .total(BigDecimal.TEN)
+                .build();
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.saveAndFlush(any(Order.class))).thenReturn(order);
+        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
+        when(outboxEventRepository.save(any(OutboxEvent.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // When
+        orderService.markAsConfirmed(orderId);
+
+        // Then
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        verify(outboxEventRepository).save(any(OutboxEvent.class));
+    }
+
+    @Test
+    void markAsFailed_success_updatesStatus() {
+        // Given
+        UUID orderId = UUID.randomUUID();
+        Order order = Order.builder()
+                .id(orderId)
+                .userId("user1")
+                .status(OrderStatus.PENDING)
+                .total(BigDecimal.TEN)
+                .build();
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.saveAndFlush(any(Order.class))).thenReturn(order);
+
+        // When
+        orderService.markAsFailed(orderId, "Pago rechazado");
+
+        // Then
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.FAILED);
+    }
+
+    @Test
+    void markAsCancelled_success_updatesStatus() {
+        // Given
+        UUID orderId = UUID.randomUUID();
+        Order order = Order.builder()
+                .id(orderId)
+                .userId("user1")
+                .status(OrderStatus.PENDING)
+                .total(BigDecimal.TEN)
+                .build();
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.saveAndFlush(any(Order.class))).thenReturn(order);
+
+        // When
+        orderService.markAsCancelled(orderId, "Stock insuficiente");
+
+        // Then
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+    @Test
+    void markAsConfirmed_fromNonPendingState_isIgnored() {
+        // Given
+        UUID orderId = UUID.randomUUID();
+        Order order = Order.builder()
+                .id(orderId)
+                .userId("user1")
+                .status(OrderStatus.CONFIRMED)
+                .total(BigDecimal.TEN)
+                .build();
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+
+        // When
+        orderService.markAsConfirmed(orderId);
+
+        // Then
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
+        verify(outboxEventRepository, never()).save(any(OutboxEvent.class));
     }
 }
