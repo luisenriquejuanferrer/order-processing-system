@@ -44,10 +44,17 @@ public class OutboxPublisher {
 
         for (OutboxEvent outboxEvent : pendingEvents) {
             try {
-                OrderCreatedEvent event = objectMapper.readValue(
-                        outboxEvent.getPayload(), OrderCreatedEvent.class);
-
-                eventProducer.publishOrderCreated(event);
+                switch (outboxEvent.getEventType()) {
+                    case "OrderCreatedEvent" -> {
+                        OrderCreatedEvent event = objectMapper.readValue(outboxEvent.getPayload(), OrderCreatedEvent.class);
+                        eventProducer.publishOrderCreated(event);
+                    }
+                    case "OrderConfirmedEvent" -> {
+                        OrderConfirmedEvent event = objectMapper.readValue(outboxEvent.getPayload(), OrderConfirmedEvent.class);
+                        eventProducer.publishOrderConfirmed(event);
+                    }
+                    default -> throw new IllegalArgumentException("Tipo de evento desconocido: " + outboxEvent.getEventType());
+                }
 
                 outboxEvent.setStatus(OutboxStatus.PUBLISHED);
                 outboxEvent.setPublishedAt(OffsetDateTime.now());

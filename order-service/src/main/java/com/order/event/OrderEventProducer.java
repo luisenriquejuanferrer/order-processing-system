@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OrderEventProducer {
 
-    private final KafkaTemplate<String, OrderCreatedEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Value("${topics.orders}")
     private String ordersTopic;
@@ -28,6 +28,21 @@ public class OrderEventProducer {
                         log.error("Error al publicar evento OrderCreated {}", event.getEventId(), ex);
                     } else {
                         log.info("Evento OrderCreated {} publicado correctamente en partition {}, offset {}",
+                                event.getEventId(),
+                                result.getRecordMetadata().partition(),
+                                result.getRecordMetadata().offset());
+                    }
+                });
+    }
+
+    public void publishOrderConfirmed(OrderConfirmedEvent event) {
+        log.info("Publicando evento OrderConfirmed: {} en topic: {}", event.getEventId(), ordersTopic);
+        kafkaTemplate.send(ordersTopic, event.getOrderId().toString(), event)
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("Error al publicar evento OrderConfirmed {}", event.getEventId(), ex);
+                    } else {
+                        log.info("Evento OrderConfirmed {} publicado correctamente en partition {}, offset {}",
                                 event.getEventId(),
                                 result.getRecordMetadata().partition(),
                                 result.getRecordMetadata().offset());

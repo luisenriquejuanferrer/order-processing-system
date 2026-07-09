@@ -2,15 +2,16 @@ package com.order.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.order.dto.*;
-import com.order.event.OrderCreatedEvent;
-import com.order.event.OrderItemEvent;
+import com.order.event.*;
 import com.order.model.Order;
 import com.order.model.OrderItem;
 import com.order.model.OrderStatus;
 import com.order.model.OutboxEvent;
 import com.order.model.OutboxStatus;
+import com.order.model.ProcessedEvent;
 import com.order.repository.OrderRepository;
 import com.order.repository.OutboxEventRepository;
+import com.order.repository.ProcessedEventRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -30,6 +32,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final OutboxEventRepository outboxEventRepository;
+    private final ProcessedEventRepository processedEventRepository;
     private final ObjectMapper objectMapper;
 
     @Transactional
@@ -54,7 +57,7 @@ public class OrderService {
         Order savedOrder = orderRepository.saveAndFlush(order);
         log.info("Pedido {} guardado en base de datos", savedOrder.getId());
 
-        OrderCreatedEvent event = mapToEvent(savedOrder);
+        OrderCreatedEvent event = mapToOrderCreatedEvent(savedOrder);
         saveOutboxEvent(savedOrder.getId(), event);
         log.info("Evento OrderCreated {} guardado en outbox", event.getEventId());
 
@@ -77,13 +80,63 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public void markAsConfirmed(UUID orderId) {
+        log.info("Marcando pedido {} como CONFIRMED", orderId);
+        updateOrderStatus(orderId, OrderStatus.CONFIRMED, "El pedido ha sido confirmado");
+    }
+
+    @Transactional
+    public void markAsFailed(UUID orderId, String reason) {
+        log.info("Marcando pedido {} como FAILED. Motivo: {}", orderId, reason);
+        updateOrderStatus(orderId, OrderStatus.FAILED, reason);
+    }
+
+    @Transactional
+    public void markAsCancelled(UUID orderId, String reason) {
+        log.info("Marcando pedido {} como CANCELLED. Motivo: {}", orderId, reason);
+        updateOrderStatus(orderId, OrderStatus.CANCELLED, reason);
+    }
+
+    private void updateOrderStatus(UUID orderId, OrderStatus newStatus, String reason) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Pedido no encontrado: " + orderId));
+
+        if (!canTransition(order.getStatus(), newStatus)) {
+            log.warn("Transición de estado no permitida para pedido {}: {} -> {}", orderId, order.getStatus(), newStatus);
+            return;
+        }
+
+        order.setStatus(newStatus);
+        Order savedOrder = orderRepository.saveAndFlush(order);
+        log.info("Pedido {} actualizado a estado {}", orderId, newStatus);
+
+        if (newStatus == OrderStatus.CONFIRMED) {
+            OrderConfirmedEvent event = OrderConfirmedEvent.builder()
+                    .eventId(UUID.randomUUID())
+                    .orderId(savedOrder.getId())
+                    .userId(savedOrder.getUserId())
+                    .timestamp(Instant.now().toEpochMilli())
+                    .build();
+            saveOutboxEvent(savedOrder.getId(), event);
+            log.info("Evento OrderConfirmed {} guardado en outbox", event.getEventId());
+        }
+    }
+
+    private boolean canTransition(OrderStatus current, OrderStatus next) {
+        if (current == OrderStatus.PENDING) {
+            return next == OrderStatus.CONFIRMED || next == OrderStatus.CANCELLED || next == OrderStatus.FAILED;
+        }
+        return false;
+    }
+
     private BigDecimal calculateTotal(Order order) {
         return order.getItems().stream()
                 .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private OrderCreatedEvent mapToEvent(Order order) {
+    private OrderCreatedEvent mapToOrderCreatedEvent(Order order) {
         return OrderCreatedEvent.builder()
                 .eventId(UUID.randomUUID())
                 .orderId(order.getId())
@@ -100,7 +153,7 @@ public class OrderService {
                 .build();
     }
 
-    private void saveOutboxEvent(UUID orderId, OrderCreatedEvent event) {
+    private void saveOutboxEvent(UUID orderId, Object event) {
         try {
             String payload = objectMapper.writeValueAsString(event);
             OutboxEvent outboxEvent = OutboxEvent.builder()
