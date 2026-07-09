@@ -33,6 +33,7 @@ Desde IntelliJ IDEA, ejecuta las siguientes aplicaciones en este orden:
 1. **OrderServiceApplication** (puerto 8081)
 2. **PaymentServiceApplication** (puerto 8082)
 3. **InventoryServiceApplication** (puerto 8083)
+4. **NotificationServiceApplication** (puerto 8084)
 
 O desde terminal:
 
@@ -45,6 +46,9 @@ java -jar payment-service/target/payment-service-1.0.0-SNAPSHOT.jar
 
 # Terminal 3 - Inventory Service
 java -jar inventory-service/target/inventory-service-1.0.0-SNAPSHOT.jar
+
+# Terminal 4 - Notification Service
+java -jar notification-service/target/notification-service-1.0.0-SNAPSHOT.jar
 ```
 
 ## Paso 4: Importar Collection en Postman
@@ -208,6 +212,12 @@ SELECT * FROM inventory.outbox_events;
 # Ver eventos procesados (Inventory Service)
 SELECT * FROM inventory.processed_events;
 
+# Ver notificaciones
+SELECT * FROM notifications.notifications;
+
+# Ver eventos procesados (Notification Service)
+SELECT * FROM notifications.processed_events;
+
 # Salir de psql
 \q
 ```
@@ -226,13 +236,36 @@ SELECT * FROM inventory.processed_events;
 - **URL:** `http://localhost:8083/actuator/health`
 - **Respuesta esperada:** `{"status": "UP"}`
 
-## Paso 8: Verificar Swagger UI
+- **Request:** `Actuator > Notification Service Health`
+- **URL:** `http://localhost:8084/actuator/health`
+- **Respuesta esperada:** `{"status": "UP"}`
+
+## Paso 8: Verificar Notificaciones
+
+El Notification Service consume eventos de pago fallido y stock insuficiente. Crea notificaciones en la base de datos automáticamente.
+
+### 8.1 Listar Todas las Notificaciones
+
+- **Request:** `Notification Service > Listar Notificaciones`
+- **Método:** GET
+- **URL:** `http://localhost:8084/api/notifications`
+- **Respuesta esperada:** 200 OK con lista de notificaciones
+
+### 8.2 Listar Notificaciones por Pedido
+
+- **Request:** `Notification Service > Notificaciones por Pedido`
+- **Método:** GET
+- **URL:** `http://localhost:8084/api/notifications/order/{orderId}`
+- Reemplaza `{orderId}` con el ID del pedido
+- **Respuesta esperada:** 200 OK con notificaciones del pedido
+
+## Paso 9: Verificar Swagger UI
 
 - **Request:** `Swagger UI > Order Service Swagger`
 - **URL:** `http://localhost:8081/swagger-ui.html`
 - Deberías ver la documentación interactiva de la API
 
-## Paso 9: Probar Escenarios de Error
+## Paso 10: Probar Escenarios de Error
 
 ### 9.1 Pedido con Items Vacíos
 
@@ -324,7 +357,7 @@ Luego, crea un pedido con quantity mayor al stock disponible:
 6. Payment Service recibe InventoryShortageEvent y emite PaymentRefundedEvent
 7. Order Service recibe eventos y marca el pedido como CANCELLED
 
-## Paso 10: Monitoreo con Prometheus y Grafana
+## Paso 11: Monitoreo con Prometheus y Grafana
 
 - **Prometheus:** http://localhost:9090
   - Ver métricas de los servicios
@@ -335,7 +368,7 @@ Luego, crea un pedido con quantity mayor al stock disponible:
   - Password: `admin`
   - Explorar dashboards preconfigurados
 
-## Paso 11: Limpiar y Reiniciar
+## Paso 12: Limpiar y Reiniciar
 
 ```bash
 # Parar servicios (desde IntelliJ o Ctrl+C en terminal)
@@ -370,8 +403,13 @@ docker compose up -d kafka postgres prometheus grafana
 15. Inventory Service → Si stock suficiente: decrementa stock, publica InventoryReservedEvent
 16. Inventory Service → Si stock insuficiente: publica InventoryShortageEvent
 17. Order Service → Consume InventoryReservedEvent → marca pedido como CONFIRMED
-18. Order Service → Consume InventoryShortageEvent → marca pedido como CANCELLED
-19. Payment Service → Consume InventoryShortageEvent → emite PaymentRefundedEvent (compensación)
+18. Order Service → Guarda OrderConfirmedEvent en outbox
+19. OutboxPublisher (Order) → Publica OrderConfirmedEvent en topic "orders"
+20. Notification Service → Consume OrderConfirmedEvent → crea notificación ORDER_CONFIRMED
+21. Order Service → Consume InventoryShortageEvent → marca pedido como CANCELLED
+22. Payment Service → Consume InventoryShortageEvent → emite PaymentRefundedEvent (compensación)
+23. Notification Service → Consume PaymentFailedEvent → crea notificación PAYMENT_FAILED
+24. Notification Service → Consume InventoryShortageEvent → crea notificación INVENTORY_SHORTAGE
 ```
 
 ## Comandos Útiles

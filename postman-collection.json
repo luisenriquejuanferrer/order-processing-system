@@ -153,6 +153,41 @@
       ]
     },
     {
+      "name": "Notification Service",
+      "item": [
+        {
+          "name": "Listar Notificaciones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8084/api/notifications",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["api", "notifications"]
+            },
+            "description": "Lista todas las notificaciones generadas"
+          }
+        },
+        {
+          "name": "Notificaciones por Pedido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8084/api/notifications/order/{{orderId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["api", "notifications", "order", "{{orderId}}"]
+            },
+            "description": "Lista las notificaciones de un pedido específico"
+          }
+        }
+      ]
+    },
+    {
       "name": "Swagger UI",
       "item": [
         {
@@ -218,6 +253,21 @@
               "path": ["actuator", "health"]
             },
             "description": "Health check del Inventory Service"
+          }
+        },
+        {
+          "name": "Notification Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8084/actuator/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["actuator", "health"]
+            },
+            "description": "Health check del Notification Service"
           }
         }
       ]
