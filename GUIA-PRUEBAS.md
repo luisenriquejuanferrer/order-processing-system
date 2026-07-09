@@ -7,28 +7,47 @@
 - Maven 3.9+ instalado
 - IntelliJ IDEA (opcional, para ejecutar servicios)
 
-## Paso 1: Arrancar Infraestructura
+## Paso 1: Arrancar Todo el Sistema
+
+Con un solo comando se levanta Kafka, PostgreSQL, Prometheus, Grafana y los 4 microservicios:
 
 ```bash
-# Arrancar Kafka, PostgreSQL, Prometheus y Grafana
-docker compose up -d kafka postgres prometheus grafana
+# Construir imágenes y arrancar todos los contenedores
+docker compose up -d --build
 
-# Verificar que todos los contenedores están running
+# Verificar que todos los contenedores están running/healthy
 docker compose ps
 ```
 
-Deberías ver 4 contenedores con estado "Up" o "healthy".
+Deberías ver 8 contenedores con estado "Up" o "healthy":
+- kafka
+- postgres
+- prometheus
+- grafana
+- order-service
+- payment-service
+- inventory-service
+- notification-service
 
-## Paso 2: Compilar el Proyecto
+## Paso 2: Verificar Logs
 
 ```bash
-# Compilar todos los módulos
-mvn clean install -DskipTests
+# Logs de todos los servicios
+docker compose logs -f
+
+# Logs de un servicio específico
+docker compose logs -f order-service
 ```
 
-## Paso 3: Arrancar Servicios
+## Paso 3: Arrancar Servicios para Desarrollo (alternativa)
 
-Desde IntelliJ IDEA, ejecuta las siguientes aplicaciones en este orden:
+Si prefieres desarrollar con IntelliJ, primero levanta la infraestructura:
+
+```bash
+docker compose up -d kafka postgres prometheus grafana
+```
+
+Luego ejecuta las aplicaciones en este orden:
 
 1. **OrderServiceApplication** (puerto 8081)
 2. **PaymentServiceApplication** (puerto 8082)
@@ -368,21 +387,6 @@ Luego, crea un pedido con quantity mayor al stock disponible:
   - Password: `admin`
   - Explorar dashboards preconfigurados
 
-## Paso 12: Limpiar y Reiniciar
-
-```bash
-# Parar servicios (desde IntelliJ o Ctrl+C en terminal)
-
-# Parar infraestructura
-docker compose down
-
-# Parar y eliminar volúmenes (borra datos de PostgreSQL)
-docker compose down -v
-
-# Reiniciar todo
-docker compose up -d kafka postgres prometheus grafana
-```
-
 ## Flujo de Eventos Esperado
 
 ```
@@ -486,3 +490,16 @@ docker exec -it kafka /opt/kafka/bin/kafka-consumer-groups.sh \
 - Verifica que el OutboxPublisher de Inventory Service está ejecutándose
 - Verifica la tabla `inventory.processed_events` para confirmar que el evento fue procesado
 - Verifica la tabla `inventory.outbox_events` para ver si el evento InventoryReservedEvent fue generado
+
+## Paso 12: Limpiar y Reiniciar
+
+```bash
+# Parar todos los contenedores
+docker compose down
+
+# Parar y eliminar volúmenes (borra datos de PostgreSQL)
+docker compose down -v
+
+# Reconstruir y arrancar todo de nuevo
+docker compose up -d --build
+```
