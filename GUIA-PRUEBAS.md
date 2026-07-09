@@ -389,6 +389,8 @@ Luego, crea un pedido con quantity mayor al stock disponible:
 
 ## Flujo de Eventos Esperado
 
+### Happy Path (Pago Aprobado + Stock Suficiente)
+
 ```
 1. Cliente → POST /api/orders
 2. Order Service → Guarda pedido en BD (status: PENDING)
@@ -404,16 +406,37 @@ Luego, crea un pedido con quantity mayor al stock disponible:
 12. OutboxPublisher (Payment) → Publica PaymentProcessedEvent en topic "payments"
 13. Inventory Service → Consume PaymentProcessedEvent
 14. Inventory Service → Verifica stock disponible
-15. Inventory Service → Si stock suficiente: decrementa stock, publica InventoryReservedEvent
-16. Inventory Service → Si stock insuficiente: publica InventoryShortageEvent
+15. Inventory Service → Decrementa stock, guarda evento InventoryReservedEvent en outbox
+16. OutboxPublisher (Inventory) → Publica InventoryReservedEvent en topic "inventory"
 17. Order Service → Consume InventoryReservedEvent → marca pedido como CONFIRMED
 18. Order Service → Guarda OrderConfirmedEvent en outbox
 19. OutboxPublisher (Order) → Publica OrderConfirmedEvent en topic "orders"
 20. Notification Service → Consume OrderConfirmedEvent → crea notificación ORDER_CONFIRMED
-21. Order Service → Consume InventoryShortageEvent → marca pedido como CANCELLED
-22. Payment Service → Consume InventoryShortageEvent → emite PaymentRefundedEvent (compensación)
-23. Notification Service → Consume PaymentFailedEvent → crea notificación PAYMENT_FAILED
-24. Notification Service → Consume InventoryShortageEvent → crea notificación INVENTORY_SHORTAGE
+```
+
+### Error Path (Pago Declinado)
+
+```
+1-8. (Igual que Happy Path)
+9. Payment Service → Pago DECLINED (20% probabilidad)
+10. Payment Service → Guarda pago con status DECLINED
+11. Payment Service → Guarda PaymentFailedEvent en outbox
+12. OutboxPublisher (Payment) → Publica PaymentFailedEvent en topic "payments"
+13. Order Service → Consume PaymentFailedEvent → marca pedido como FAILED
+14. Notification Service → Consume PaymentFailedEvent → crea notificación PAYMENT_FAILED
+```
+
+### Error Path (Stock Insuficiente)
+
+```
+1-12. (Igual que Happy Path hasta PaymentProcessedEvent)
+13. Inventory Service → Consume PaymentProcessedEvent
+14. Inventory Service → Detecta stock insuficiente
+15. Inventory Service → Guarda InventoryShortageEvent en outbox
+16. OutboxPublisher (Inventory) → Publica InventoryShortageEvent en topic "inventory"
+17. Order Service → Consume InventoryShortageEvent → marca pedido como CANCELLED
+18. Payment Service → Consume InventoryShortageEvent → emite PaymentRefundedEvent (compensación)
+19. Notification Service → Consume InventoryShortageEvent → crea notificación INVENTORY_SHORTAGE
 ```
 
 ## Comandos Útiles
