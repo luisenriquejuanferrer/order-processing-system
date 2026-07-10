@@ -6,6 +6,206 @@
   },
   "item": [
     {
+      "name": "API Gateway",
+      "item": [
+        {
+          "name": "Generar Token JWT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo\",\n  \"password\": \"demo\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/auth/token",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["auth", "token"]
+            },
+            "description": "Genera un token JWT para autenticar las peticiones al gateway. Usuario: demo / Password: demo"
+          }
+        },
+        {
+          "name": "Crear Pedido via Gateway",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"user1\",\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 2,\n      \"unitPrice\": 25.50\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/orders",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "orders"]
+            },
+            "description": "Crea un pedido a través del API Gateway (requiere token JWT)"
+          }
+        },
+        {
+          "name": "Listar Pedidos via Gateway",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/orders",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "orders"]
+            },
+            "description": "Lista pedidos a través del API Gateway (requiere token JWT)"
+          }
+        },
+        {
+          "name": "Obtener Pedido via Gateway",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/orders/{{orderId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "orders", "{{orderId}}"]
+            },
+            "description": "Obtiene un pedido por ID a través del API Gateway (requiere token JWT)"
+          }
+        },
+        {
+          "name": "Crear Producto via Gateway",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Producto de Prueba\",\n  \"sku\": \"SKU-GW-001\",\n  \"stock\": 100,\n  \"price\": 25.50\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/products",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "products"]
+            },
+            "description": "Crea un producto a través del API Gateway (requiere token JWT)"
+          }
+        },
+        {
+          "name": "Listar Productos via Gateway",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/products",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "products"]
+            },
+            "description": "Lista productos a través del API Gateway (requiere token JWT)"
+          }
+        },
+        {
+          "name": "Obtener Pago via Gateway",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/payments/order/{{orderId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "payments", "order", "{{orderId}}"]
+            },
+            "description": "Obtiene el pago de un pedido a través del API Gateway (requiere token JWT)"
+          }
+        },
+        {
+          "name": "Listar Notificaciones via Gateway",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/notifications",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "notifications"]
+            },
+            "description": "Lista notificaciones a través del API Gateway (requiere token JWT)"
+          }
+        },
+        {
+          "name": "Health Gateway",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/actuator/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["actuator", "health"]
+            },
+            "description": "Health check del API Gateway (no requiere JWT)"
+          }
+        }
+      ]
+    },
+    {
       "name": "Order Service",
       "item": [
         {
@@ -281,6 +481,11 @@
     },
     {
       "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token",
       "value": "",
       "type": "string"
     }

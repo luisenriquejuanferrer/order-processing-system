@@ -9,7 +9,7 @@
 
 ## Paso 1: Arrancar Todo el Sistema
 
-Con un solo comando se levanta Kafka, PostgreSQL, Prometheus, Grafana y los 4 microservicios:
+Con un solo comando se levanta Kafka, PostgreSQL, Prometheus, Grafana, el API Gateway y los 4 microservicios:
 
 ```bash
 # Construir imágenes y arrancar todos los contenedores
@@ -19,15 +19,18 @@ docker compose up -d --build
 docker compose ps
 ```
 
-Deberías ver 8 contenedores con estado "Up" o "healthy":
+Deberías ver 9 contenedores con estado "Up" o "healthy":
 - kafka
 - postgres
 - prometheus
 - grafana
+- api-gateway
 - order-service
 - payment-service
 - inventory-service
 - notification-service
+
+> **Nota:** Ahora todas las peticiones pueden hacerse a través del **API Gateway** en `http://localhost:8080` usando un JWT. La carpeta "API Gateway" de la collection de Postman contiene las requests configuradas.
 
 ## Paso 2: Verificar Logs
 
