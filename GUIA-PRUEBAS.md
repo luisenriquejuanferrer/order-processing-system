@@ -517,7 +517,25 @@ docker exec -it kafka /opt/kafka/bin/kafka-consumer-groups.sh \
 - Verifica la tabla `inventory.processed_events` para confirmar que el evento fue procesado
 - Verifica la tabla `inventory.outbox_events` para ver si el evento InventoryReservedEvent fue generado
 
-## Paso 12: Limpiar y Reiniciar
+## Paso 12: Verificar Dead Letter Topics (DLT)
+
+Si un mensaje falla tras 4 intentos (1 inicial + 3 reintentos con 1s de espera entre ellos), se envía a un topic DLT:
+
+```bash
+# Listar topics incluyendo DLTs
+docker exec -it kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9093 --list
+
+# Consumir mensajes de un DLT
+docker exec -it kafka /opt/kafka/bin/kafka-console-consumer.sh \
+  --bootstrap-server localhost:9093 \
+  --topic orders-dlt \
+  --from-beginning \
+  --property print.headers=true
+```
+
+Los servicios también loguean los mensajes recibidos en DLT con prefijo `Mensaje recibido en DLT`.
+
+## Paso 13: Limpiar y Reiniciar
 
 ```bash
 # Parar todos los contenedores

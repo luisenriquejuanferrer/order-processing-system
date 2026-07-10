@@ -22,61 +22,51 @@ public class OrderEventConsumer {
 
     @KafkaListener(topics = "${topics.payments}", groupId = "${spring.kafka.consumer.group-id}")
     @Transactional
-    public void handlePaymentEvent(String payload) {
-        try {
-            JsonNode node = objectMapper.readTree(payload);
-            String eventType = detectPaymentEventType(node);
+    public void handlePaymentEvent(String payload) throws Exception {
+        JsonNode node = objectMapper.readTree(payload);
+        String eventType = detectPaymentEventType(node);
 
-            switch (eventType) {
-                case "PaymentProcessedEvent" -> {
-                    PaymentProcessedEvent event = objectMapper.readValue(payload, PaymentProcessedEvent.class);
-                    processIfNotDuplicate(event.getEventId().toString(), eventType, () -> {
-                        log.info("Recibido PaymentProcessedEvent para pedido: {}", event.getOrderId());
-                        orderService.markAsConfirmed(event.getOrderId());
-                    });
-                }
-                case "PaymentFailedEvent" -> {
-                    PaymentFailedEvent event = objectMapper.readValue(payload, PaymentFailedEvent.class);
-                    processIfNotDuplicate(event.getEventId().toString(), eventType, () -> {
-                        log.info("Recibido PaymentFailedEvent para pedido: {}", event.getOrderId());
-                        orderService.markAsFailed(event.getOrderId(), event.getReason());
-                    });
-                }
-                default -> log.info("Ignorando evento de payments: {}", eventType);
+        switch (eventType) {
+            case "PaymentProcessedEvent" -> {
+                PaymentProcessedEvent event = objectMapper.readValue(payload, PaymentProcessedEvent.class);
+                processIfNotDuplicate(event.getEventId().toString(), eventType, () -> {
+                    log.info("Recibido PaymentProcessedEvent para pedido: {}", event.getOrderId());
+                    orderService.markAsConfirmed(event.getOrderId());
+                });
             }
-        } catch (Exception ex) {
-            log.error("Error al procesar evento de payments: {}", payload, ex);
-            throw new RuntimeException("Error al procesar evento de payments", ex);
+            case "PaymentFailedEvent" -> {
+                PaymentFailedEvent event = objectMapper.readValue(payload, PaymentFailedEvent.class);
+                processIfNotDuplicate(event.getEventId().toString(), eventType, () -> {
+                    log.info("Recibido PaymentFailedEvent para pedido: {}", event.getOrderId());
+                    orderService.markAsFailed(event.getOrderId(), event.getReason());
+                });
+            }
+            default -> log.info("Ignorando evento de payments: {}", eventType);
         }
     }
 
     @KafkaListener(topics = "${topics.inventory}", groupId = "${spring.kafka.consumer.group-id}")
     @Transactional
-    public void handleInventoryEvent(String payload) {
-        try {
-            JsonNode node = objectMapper.readTree(payload);
-            String eventType = detectInventoryEventType(node);
+    public void handleInventoryEvent(String payload) throws Exception {
+        JsonNode node = objectMapper.readTree(payload);
+        String eventType = detectInventoryEventType(node);
 
-            switch (eventType) {
-                case "InventoryReservedEvent" -> {
-                    InventoryReservedEvent event = objectMapper.readValue(payload, InventoryReservedEvent.class);
-                    processIfNotDuplicate(event.getEventId().toString(), eventType, () -> {
-                        log.info("Recibido InventoryReservedEvent para pedido: {}", event.getOrderId());
-                        orderService.markAsConfirmed(event.getOrderId());
-                    });
-                }
-                case "InventoryShortageEvent" -> {
-                    InventoryShortageEvent event = objectMapper.readValue(payload, InventoryShortageEvent.class);
-                    processIfNotDuplicate(event.getEventId().toString(), eventType, () -> {
-                        log.info("Recibido InventoryShortageEvent para pedido: {}", event.getOrderId());
-                        orderService.markAsCancelled(event.getOrderId(), event.getReason());
-                    });
-                }
-                default -> log.info("Ignorando evento de inventory: {}", eventType);
+        switch (eventType) {
+            case "InventoryReservedEvent" -> {
+                InventoryReservedEvent event = objectMapper.readValue(payload, InventoryReservedEvent.class);
+                processIfNotDuplicate(event.getEventId().toString(), eventType, () -> {
+                    log.info("Recibido InventoryReservedEvent para pedido: {}", event.getOrderId());
+                    orderService.markAsConfirmed(event.getOrderId());
+                });
             }
-        } catch (Exception ex) {
-            log.error("Error al procesar evento de inventory: {}", payload, ex);
-            throw new RuntimeException("Error al procesar evento de inventory", ex);
+            case "InventoryShortageEvent" -> {
+                InventoryShortageEvent event = objectMapper.readValue(payload, InventoryShortageEvent.class);
+                processIfNotDuplicate(event.getEventId().toString(), eventType, () -> {
+                    log.info("Recibido InventoryShortageEvent para pedido: {}", event.getOrderId());
+                    orderService.markAsCancelled(event.getOrderId(), event.getReason());
+                });
+            }
+            default -> log.info("Ignorando evento de inventory: {}", eventType);
         }
     }
 

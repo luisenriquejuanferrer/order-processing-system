@@ -17,60 +17,45 @@ public class NotificationEventConsumer {
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "${topics.payments}", groupId = "${spring.kafka.consumer.group-id}")
-    public void handlePaymentEvent(String payload) {
-        try {
-            JsonNode node = objectMapper.readTree(payload);
-            String eventType = detectEventType(node);
+    public void handlePaymentEvent(String payload) throws Exception {
+        JsonNode node = objectMapper.readTree(payload);
+        String eventType = detectEventType(node);
 
-            switch (eventType) {
-                case "PaymentFailedEvent" -> {
-                    PaymentFailedEvent event = objectMapper.readValue(payload, PaymentFailedEvent.class);
-                    log.info("Recibido PaymentFailedEvent para pedido: {}", event.getOrderId());
-                    notificationService.handlePaymentFailed(event);
-                }
-                default -> log.info("Ignorando evento de payments: {}", eventType);
+        switch (eventType) {
+            case "PaymentFailedEvent" -> {
+                PaymentFailedEvent event = objectMapper.readValue(payload, PaymentFailedEvent.class);
+                log.info("Recibido PaymentFailedEvent para pedido: {}", event.getOrderId());
+                notificationService.handlePaymentFailed(event);
             }
-        } catch (Exception ex) {
-            log.error("Error al procesar evento de payments: {}", payload, ex);
-            throw new RuntimeException("Error al procesar evento de payments", ex);
+            default -> log.info("Ignorando evento de payments: {}", eventType);
         }
     }
 
     @KafkaListener(topics = "${topics.inventory}", groupId = "${spring.kafka.consumer.group-id}")
-    public void handleInventoryEvent(String payload) {
-        try {
-            JsonNode node = objectMapper.readTree(payload);
-            String eventType = detectEventType(node);
+    public void handleInventoryEvent(String payload) throws Exception {
+        JsonNode node = objectMapper.readTree(payload);
+        String eventType = detectEventType(node);
 
-            if ("InventoryShortageEvent".equals(eventType)) {
-                InventoryShortageEvent event = objectMapper.readValue(payload, InventoryShortageEvent.class);
-                log.info("Recibido InventoryShortageEvent para pedido: {}", event.getOrderId());
-                notificationService.handleInventoryShortage(event);
-            } else {
-                log.info("Ignorando evento de inventory: {}", eventType);
-            }
-        } catch (Exception ex) {
-            log.error("Error al procesar evento de inventory: {}", payload, ex);
-            throw new RuntimeException("Error al procesar evento de inventory", ex);
+        if ("InventoryShortageEvent".equals(eventType)) {
+            InventoryShortageEvent event = objectMapper.readValue(payload, InventoryShortageEvent.class);
+            log.info("Recibido InventoryShortageEvent para pedido: {}", event.getOrderId());
+            notificationService.handleInventoryShortage(event);
+        } else {
+            log.info("Ignorando evento de inventory: {}", eventType);
         }
     }
 
     @KafkaListener(topics = "${topics.orders}", groupId = "${spring.kafka.consumer.group-id}")
-    public void handleOrderEvent(String payload) {
-        try {
-            JsonNode node = objectMapper.readTree(payload);
-            String eventType = detectOrderEventType(node);
+    public void handleOrderEvent(String payload) throws Exception {
+        JsonNode node = objectMapper.readTree(payload);
+        String eventType = detectOrderEventType(node);
 
-            if ("OrderConfirmedEvent".equals(eventType)) {
-                OrderConfirmedEvent event = objectMapper.readValue(payload, OrderConfirmedEvent.class);
-                log.info("Recibido OrderConfirmedEvent para pedido: {}", event.getOrderId());
-                notificationService.handleOrderConfirmed(event);
-            } else {
-                log.info("Ignorando evento de orders: {}", eventType);
-            }
-        } catch (Exception ex) {
-            log.error("Error al procesar evento de orders: {}", payload, ex);
-            throw new RuntimeException("Error al procesar evento de orders", ex);
+        if ("OrderConfirmedEvent".equals(eventType)) {
+            OrderConfirmedEvent event = objectMapper.readValue(payload, OrderConfirmedEvent.class);
+            log.info("Recibido OrderConfirmedEvent para pedido: {}", event.getOrderId());
+            notificationService.handleOrderConfirmed(event);
+        } else {
+            log.info("Ignorando evento de orders: {}", eventType);
         }
     }
 
