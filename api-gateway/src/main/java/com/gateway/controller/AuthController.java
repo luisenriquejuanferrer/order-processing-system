@@ -1,6 +1,8 @@
 package com.gateway.controller;
 
 import com.gateway.util.JwtUtils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Tag(name = "API Gateway", description = "Autenticación y generación de tokens JWT")
 public class AuthController {
 
     private final JwtUtils jwtUtils;
@@ -22,6 +25,7 @@ public class AuthController {
     private static final List<String> VALID_CREDENTIALS = List.of("demo", "admin");
 
     @PostMapping("/token")
+    @Operation(summary = "Generar token JWT", description = "Autentica al usuario y devuelve un token JWT válido para acceder a los endpoints protegidos")
     public Mono<ResponseEntity<AuthResponse>> getToken(@RequestBody LoginRequest request) {
         if (request == null || request.getUsername() == null || request.getPassword() == null) {
             return Mono.just(ResponseEntity.badRequest().build());

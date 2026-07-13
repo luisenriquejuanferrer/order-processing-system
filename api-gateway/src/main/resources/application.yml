@@ -47,6 +47,48 @@ spring:
           filters:
             - StripPrefix=0
 
+        - id: order-service-docs
+          uri: http://order-service:8081
+          predicates:
+            - Path=/v3/api-docs/order-service
+          filters:
+            - RewritePath=/v3/api-docs/order-service, /v3/api-docs
+
+        - id: payment-service-docs
+          uri: http://payment-service:8082
+          predicates:
+            - Path=/v3/api-docs/payment-service
+          filters:
+            - RewritePath=/v3/api-docs/payment-service, /v3/api-docs
+
+        - id: inventory-service-docs
+          uri: http://inventory-service:8083
+          predicates:
+            - Path=/v3/api-docs/inventory-service
+          filters:
+            - RewritePath=/v3/api-docs/inventory-service, /v3/api-docs
+
+        - id: notification-service-docs
+          uri: http://notification-service:8084
+          predicates:
+            - Path=/v3/api-docs/notification-service
+          filters:
+            - RewritePath=/v3/api-docs/notification-service, /v3/api-docs
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: API Gateway
+        url: /v3/api-docs
+      - name: Order Service
+        url: /v3/api-docs/order-service
+      - name: Payment Service
+        url: /v3/api-docs/payment-service
+      - name: Inventory Service
+        url: /v3/api-docs/inventory-service
+      - name: Notification Service
+        url: /v3/api-docs/notification-service
+
 jwt:
   secret: ${JWT_SECRET:my-default-secret-key-change-in-production}
   expiration-ms: ${JWT_EXPIRATION_MS:3600000}

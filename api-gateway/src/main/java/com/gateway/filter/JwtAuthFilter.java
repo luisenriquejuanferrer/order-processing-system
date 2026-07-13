@@ -24,7 +24,7 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     private final JwtUtils jwtUtils;
 
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final List<String> PUBLIC_PATHS = List.of("/auth/", "/actuator/");
+    private static final List<String> PUBLIC_PATHS = List.of("/auth/", "/actuator/", "/v3/api-docs", "/swagger-ui");
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
